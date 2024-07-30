@@ -63,9 +63,9 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	defer rows.Close()
 	// заполните срез Parcel данными из таблицы
 	var res []Parcel
+
 	for rows.Next() {
 		p := Parcel{}
-
 		err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 		if err != nil {
 			return res, err
@@ -99,18 +99,20 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 
 	p := Parcel{}
 
-	err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
-	if err != nil {
-		return err
-	}
+	for rows.Next() {
+		if err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt); err != nil {
+			//err = sql.ErrNoRows
+			return err
+		}
 
-	if p.Status != ParcelStatusRegistered {
-		return fmt.Errorf("can't change an address; carcel already sent")
+		if p.Status != ParcelStatusRegistered {
+			return fmt.Errorf("can't change an address; carcel already sent")
+		}
 	}
 
 	_, err = s.db.Exec("UPDATE parcel SET address = :address where number = :number",
-		sql.Named("number", number),
-		sql.Named("address", address))
+		sql.Named("address", address),
+		sql.Named("number", number))
 
 	if err != nil {
 		return err

@@ -145,11 +145,10 @@ func TestGetByClient(t *testing.T) {
 
 	// add
 	for i := 0; i < len(parcels); i++ {
-		id, err := store.Add(parcel)
+		id, err := store.Add(parcels[i])
 		if err != nil {
 			require.NoError(t, err)
 			require.NotEmpty(t, parcel.Number)
-			fmt.Println(parcel)
 		}
 		// обновляем идентификатор добавленной посылки
 		parcels[i].Number = id
@@ -163,7 +162,7 @@ func TestGetByClient(t *testing.T) {
 	// убедитесь в отсутствии ошибки
 	require.NoError(t, err)
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
-	require.Equal(t, len(parcelMap), len(storedParcels))
+	require.Equal(t, len(parcelMap), len(storedParcels), fmt.Sprint(parcelMap, storedParcels))
 	// check
 	for _, parcel := range storedParcels {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
