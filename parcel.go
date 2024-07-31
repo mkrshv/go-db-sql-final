@@ -36,19 +36,14 @@ func (s ParcelStore) Add(p Parcel) (int, error) {
 func (s ParcelStore) Get(number int) (Parcel, error) {
 	// реализуйте чтение строки по заданному number
 	// здесь из таблицы должна вернуться только одна строка
-	rows, err := s.db.Query("SELECT * FROM parcel WHERE number = :number", sql.Named("number", number))
-	if err != nil {
-		return Parcel{}, err
-	}
-	defer rows.Close()
+	row := s.db.QueryRow("SELECT * FROM parcel WHERE number = :number", sql.Named("number", number))
 
 	// заполните объект Parcel данными из таблицы
 	p := Parcel{}
-	for rows.Next() {
-		err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
-		if err != nil {
-			return Parcel{}, err
-		}
+
+	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
+	if err != nil {
+		return Parcel{}, err
 	}
 	return p, nil
 }
@@ -72,7 +67,8 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 		}
 		res = append(res, p)
 	}
-	return res, nil
+	err = rows.Err() //???
+	return res, err
 }
 
 func (s ParcelStore) SetStatus(number int, status string) error {
@@ -91,26 +87,19 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
-	rows, err := s.db.Query("SELECT * FROM parcel WHERE number = :number", sql.Named("number", number))
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	rows := s.db.QueryRow("SELECT * FROM parcel WHERE number = :number", sql.Named("number", number))
 
 	p := Parcel{}
 
-	for rows.Next() {
-		if err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt); err != nil {
-			//err = sql.ErrNoRows
-			return err
-		}
-
-		if p.Status != ParcelStatusRegistered {
-			return fmt.Errorf("can't change an address; carcel already sent")
-		}
+	if err := rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt); err != nil {
+		return err
 	}
 
-	_, err = s.db.Exec("UPDATE parcel SET address = :address where number = :number",
+	if p.Status != ParcelStatusRegistered {
+		return fmt.Errorf("can't change an address; carcel already sent")
+	}
+
+	_, err := s.db.Exec("UPDATE parcel SET address = :address where number = :number",
 		sql.Named("address", address),
 		sql.Named("number", number))
 
