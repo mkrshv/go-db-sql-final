@@ -58,7 +58,7 @@ func TestAddGetDelete(t *testing.T) {
 	err = store.Delete(parcel.Number)
 	require.NoError(t, err)
 	_, err = store.Get(parcel.Number)
-	require.Error(t, sql.ErrNoRows)
+	require.Error(t, err)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -127,7 +127,6 @@ func TestGetByClient(t *testing.T) {
 
 	defer db.Close()
 	store := NewParcelStore(db)
-	parcel := getTestParcel()
 
 	parcels := []Parcel{
 		getTestParcel(),
@@ -147,7 +146,6 @@ func TestGetByClient(t *testing.T) {
 		id, err := store.Add(parcels[i])
 
 		require.NoError(t, err)
-		require.NotEmpty(t, parcel.Number)
 
 		// обновляем идентификатор добавленной посылки
 		parcels[i].Number = id
